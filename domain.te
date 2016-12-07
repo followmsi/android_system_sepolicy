@@ -265,7 +265,7 @@ neverallow { domain -init -ueventd } device:chr_file { open read write };
 # Limit what domains can mount filesystems or change their mount flags.
 # sdcard_type / vfat is exempt as a larger set of domains need
 # this capability, including device-specific domains.
-neverallow { domain -kernel -init -recovery -vold -zygote -update_engine } { fs_type -sdcard_type }:filesystem { mount remount relabelfrom relabelto };
+neverallow { domain -kernel -init -recovery -vold -zygote -update_engine -otapreopt_chroot } { fs_type -sdcard_type }:filesystem { mount remount relabelfrom relabelto };
 
 #
 # Assert that, to the extent possible, we're not loading executable content from
@@ -292,9 +292,7 @@ neverallow domain { cache_file cache_backup_file cache_private_backup_file cache
 # Protect most domains from executing arbitrary content from /data.
 neverallow {
   domain
-  -untrusted_app
-  -priv_app
-  -shell
+  -appdomain
 } {
   data_file_type
   -dalvikcache_data_file
@@ -340,6 +338,11 @@ neverallow { domain -recovery } contextmount_type:dir_file_class_set
 # from service name to service_type are defined in service_contexts.
 neverallow * default_android_service:service_manager add;
 
+# Require that domains explicitly label unknown properties, and do not allow
+# anyone but init to modify unknown properties.
+neverallow { domain -init } default_prop:property_service set;
+neverallow { domain -init } mmc_prop:property_service set;
+
 neverallow { domain -init -recovery -system_server } frp_block_device:blk_file rw_file_perms;
 
 # No domain other than recovery and update_engine can write to system partition(s).
@@ -373,7 +376,9 @@ neverallow {
   -zygote
   -installd
   -postinstall_dexopt
+  -cppreopts
   -dex2oat
+  -otapreopt_slot
 } dalvikcache_data_file:file no_w_file_perms;
 
 neverallow {
@@ -381,8 +386,10 @@ neverallow {
   -init
   -installd
   -postinstall_dexopt
+  -cppreopts
   -dex2oat
   -zygote
+  -otapreopt_slot
 } dalvikcache_data_file:dir no_w_dir_perms;
 
 # Only system_server should be able to send commands via the zygote socket
@@ -416,10 +423,27 @@ neverallow * { file_type fs_type dev_type }:{ lnk_file fifo_file sock_file } mou
 # su itself execute su.
 neverallow { domain userdebug_or_eng(`-dumpstate -shell -su') } su_exec:file no_x_file_perms;
 
+# Do not allow the introduction of new execmod rules. Text relocations
+# and modification of executable pages are unsafe.
+# The only exceptions are for NDK text relocations associated with
+# https://code.google.com/p/android/issues/detail?id=23203
+# which, long term, need to go away.
+neverallow * {
+  file_type
+  -system_data_file
+  -apk_data_file
+  -app_data_file
+  -asec_public_file
+}:file execmod;
+
 # Do not allow making the stack or heap executable.
 # We would also like to minimize execmem but it seems to be
 # required by some device-specific service domains.
 neverallow * self:process { execstack execheap };
+
+# prohibit non-zygote spawned processes from using shared libraries
+# with text relocations. b/20013628 .
+neverallow { domain -appdomain } file_type:file execmod;
 
 neverallow { domain -init } proc:{ file dir } mounton;
 
@@ -463,6 +487,11 @@ neverallow {
   -zygote
 } shell:process { transition dyntransition };
 
+# Only domains spawned from zygote and runas may have the appdomain attribute.
+neverallow { domain -runas -zygote } {
+  appdomain -shell userdebug_or_eng(`-su') -bluetooth
+}:process { transition dyntransition };
+
 # Minimize read access to shell- or app-writable symlinks.
 # This is to prevent malicious symlink attacks.
 neverallow {
@@ -492,6 +521,28 @@ neverallow {
   -shell
   -vold
 } shell_data_file:dir no_w_dir_perms;
+
+neverallow {
+  domain
+  -adbd
+  -appdomain
+  -dumpstate
+  -init
+  -installd
+  -system_server # why?
+  userdebug_or_eng(`-uncrypt')
+} shell_data_file:dir { open search };
+
+# Same as above for /data/local/tmp files. We allow shell files
+# to be passed around by file descriptor, but not directly opened.
+neverallow {
+  domain
+  -adbd
+  -appdomain
+  -dumpstate
+  -installd
+  userdebug_or_eng(`-uncrypt')
+} shell_data_file:file open;
 
 # servicemanager is the only process which handles list request
 neverallow * ~servicemanager:service_manager list;
