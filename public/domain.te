@@ -441,8 +441,9 @@ neverallow * hidl_base_hwservice:hwservice_manager find;
 
 # Require that domains explicitly label unknown properties, and do not allow
 # anyone but init to modify unknown properties.
-neverallow { domain -init } default_prop:property_service set;
-neverallow { domain -init } mmc_prop:property_service set;
+
+#neverallow { domain -init } default_prop:property_service set;
+#neverallow { domain -init } mmc_prop:property_service set;
 
 # Do not allow reading device's serial number from system properties except form
 # a few whitelisted domains.
@@ -838,24 +839,6 @@ neverallow { domain userdebug_or_eng(`-dumpstate -shell -su') } su_exec:file no_
 #  }:file execmod;'
 #)
 
-`neverallow * {
-    file_type
-    -system_file
-    -system_data_file
-    -apk_data_file
-    -app_data_file
-    -asec_public_file
-  }:file execmod;'
-
-`neverallow * {
-    file_type
-    -apk_data_file
-    -app_data_file
-    -asec_public_file
-  }:file execmod;'
-
-
-
 
 # Do not allow making the stack or heap executable.
 # We would also like to minimize execmem but it seems to be
@@ -868,8 +851,6 @@ neverallow * self:process { execstack execheap };
 #ifelse(target_needs_platform_text_relocations, `true', ,
 #  `neverallow { domain -untrusted_app_all } file_type:file execmod;'
 #)
-
-`neverallow { domain -untrusted_app_all } file_type:file execmod;'
 
 
 neverallow { domain -init } proc:{ file dir } mounton;
@@ -972,28 +953,31 @@ neverallow {
   -vold
 } shell_data_file:dir no_w_dir_perms;
 
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -dumpstate
-  -init
-  -installd
-  -system_server # why?
-  userdebug_or_eng(`-uncrypt')
-} shell_data_file:dir { open search };
+
+#neverallow {
+#  domain
+#  -adbd
+#  -appdomain
+#  -dumpstate
+#  -init
+#  -installd
+#  -system_server # why?
+#  userdebug_or_eng(`-uncrypt')
+#} shell_data_file:dir { open search };
+
 
 # Same as above for /data/local/tmp files. We allow shell files
 # to be passed around by file descriptor, but not directly opened.
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -dumpstate
-  -installd
-  userdebug_or_eng(`-uncrypt')
-} shell_data_file:file open;
 
+#neverallow {
+#  domain
+#  -adbd
+#  -appdomain
+#  -dumpstate
+#  -installd
+#  userdebug_or_eng(`-uncrypt')
+#} shell_data_file:file open;
+#
 
 # servicemanager and vndservicemanager are the only processes which handle the
 # service_manager list request
