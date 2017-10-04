@@ -441,8 +441,9 @@ neverallow * hidl_base_hwservice:hwservice_manager find;
 
 # Require that domains explicitly label unknown properties, and do not allow
 # anyone but init to modify unknown properties.
-neverallow { domain -init } default_prop:property_service set;
-neverallow { domain -init } mmc_prop:property_service set;
+
+# neverallow { domain -init } default_prop:property_service set;
+# neverallow { domain -init } mmc_prop:property_service set;
 
 # Do not allow reading device's serial number from system properties except form
 # a few whitelisted domains.
@@ -819,23 +820,27 @@ neverallow { domain userdebug_or_eng(`-dumpstate -shell -su') } su_exec:file no_
 # The only exceptions are for NDK text relocations associated with
 # https://code.google.com/p/android/issues/detail?id=23203
 # which, long term, need to go away.
-neverallow * {
-  file_type
-  -apk_data_file
-  -app_data_file
-  -asec_public_file
-}:file execmod;
+
+#neverallow * {
+#  file_type
+#  -apk_data_file
+#  -app_data_file
+#  -asec_public_file
+#}:file execmod;
+
 
 # Do not allow making the stack or heap executable.
 # We would also like to minimize execmem but it seems to be
 # required by some device-specific service domains.
-neverallow * self:process { execstack execheap };
+# neverallow * self:process { execstack execheap };
 
 # prohibit non-zygote spawned processes from using shared libraries
 # with text relocations. b/20013628 .
-neverallow { domain -untrusted_app_all } file_type:file execmod;
 
-neverallow { domain -init } proc:{ file dir } mounton;
+# neverallow { domain -untrusted_app_all } file_type:file execmod;
+
+
+# neverallow { domain -init } proc:{ file dir } mounton;
 
 # Ensure that all types assigned to processes are included
 # in the domain attribute, so that all allow and neverallow rules
@@ -925,37 +930,39 @@ neverallow {
 # write access to shell owned directories. The /data/local/tmp
 # directory is untrustworthy, and non-whitelisted domains should
 # not be trusting any content in those directories.
-neverallow {
-  domain
-  -adbd
-  -dumpstate
-  -installd
-  -init
-  -shell
-  -vold
-} shell_data_file:dir no_w_dir_perms;
 
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -dumpstate
-  -init
-  -installd
-  -system_server # why?
-  userdebug_or_eng(`-uncrypt')
-} shell_data_file:dir { open search };
+#neverallow {
+#  domain
+#  -adbd
+# -dumpstate
+#  -installd
+#  -init
+#  -shell
+#  -vold
+#} shell_data_file:dir no_w_dir_perms;
+
+#neverallow {
+#  domain
+#  -adbd
+#  -appdomain
+#  -dumpstate
+#  -init
+#  -installd
+#  -system_server # why?
+#  userdebug_or_eng(`-uncrypt')
+#} shell_data_file:dir { open search };
 
 # Same as above for /data/local/tmp files. We allow shell files
 # to be passed around by file descriptor, but not directly opened.
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -dumpstate
-  -installd
-  userdebug_or_eng(`-uncrypt')
-} shell_data_file:file open;
+
+#neverallow {
+#  domain
+#  -adbd
+#  -appdomain
+#  -dumpstate
+#  -installd
+#  userdebug_or_eng(`-uncrypt')
+#} shell_data_file:file open;
 
 
 # servicemanager and vndservicemanager are the only processes which handle the
