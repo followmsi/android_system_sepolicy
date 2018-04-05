@@ -65,7 +65,6 @@
 /dev/adf-interface[0-9]*\.[0-9]*	u:object_r:graphics_device:s0
 /dev/adf-overlay-engine[0-9]*\.[0-9]*	u:object_r:graphics_device:s0
 /dev/alarm		u:object_r:alarm_device:s0
-/dev/android_adb.*	u:object_r:adb_device:s0
 /dev/ashmem		u:object_r:ashmem_device:s0
 /dev/audio.*		u:object_r:audio_device:s0
 /dev/binder		u:object_r:binder_device:s0
@@ -233,7 +232,7 @@
 /system/bin/pppd	u:object_r:ppp_exec:s0
 /system/bin/racoon	u:object_r:racoon_exec:s0
 /system/xbin/su		u:object_r:su_exec:s0
-/system/xbin/perfprofd  u:object_r:perfprofd_exec:s0
+/system/bin/perfprofd  u:object_r:perfprofd_exec:s0
 /system/bin/dnsmasq     u:object_r:dnsmasq_exec:s0
 /system/bin/healthd     u:object_r:healthd_exec:s0
 /system/bin/clatd	u:object_r:clatd_exec:s0
@@ -402,6 +401,9 @@
 
 # Bootchart data
 /data/bootchart(/.*)?		u:object_r:bootchart_data_file:s0
+
+# Themes data
+/data/system/theme(/.*)?    u:object_r:theme_data_file:s0
 
 #############################
 # Expanded data files
